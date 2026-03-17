@@ -8,8 +8,8 @@
 #include <string>
 
 struct ControlSettings {
-    int generateAssignments;
-    int riskAnalysis;
+    int generateAssignments = 0;
+    int riskAnalysis = 0;
     std::string outputFilename = "output.csv";
 };
 

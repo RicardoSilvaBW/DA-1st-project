@@ -8,10 +8,10 @@
 #include <string>
 #include <vector>
 //The following includes are here because we need to store the data we parse. I think it makes sense to do it like that, we can change it later on.
-#include "model/Submission.h"
-#include "model/Reviewer.h"
-#include "model/Parameters.h"
-#include "model/ControlSettings.h"
+#include "../model/Submission.h"
+#include "../model/Reviewer.h"
+#include "../model/Parameters.h"
+#include "../model/ControlSettings.h"
 
 class CSVParser {
     public:
@@ -39,6 +39,8 @@ class CSVParser {
 
     //Function to trim and clean spaces and quotes from the csv
     std::string trim(const std::string& str) const;
+    std::vector<std::string> splitCSVLine(const std::string& line) const;
+    std::string stripQuotes(const std::string& str) const;
 };
 
 #endif //DA_1ST_PROJECT_CSVPARSER_H

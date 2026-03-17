@@ -4,7 +4,7 @@
 
 #include "RiskResult.h"
 
-RiskResult::RiskResult(int riskLevel, std::vector<int> riskyReviewerIds) :
+RiskResult::RiskResult(int riskLevel, std::vector<int> riskyReviewerIds)
     : riskLevel(riskLevel), riskyReviewerIds(riskyReviewerIds) {}
 
 int RiskResult::getRiskLevel() const {

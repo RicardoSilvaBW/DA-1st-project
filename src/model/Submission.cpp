@@ -4,7 +4,7 @@
 
 #include "Submission.h"
 
-Submission::Submission(int id, std::string title, std::tring authors,
+Submission::Submission(int id, std::string title, std::string authors,
                         std::string email, int primaryTopic, int secondaryTopic)
                             : id(id), title(title), authors(authors), email(email),
                                 primaryTopic(primaryTopic), secondaryTopic(secondaryTopic) {}
