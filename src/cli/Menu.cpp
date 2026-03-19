@@ -104,7 +104,7 @@ void Menu::readAndParseData() {
         cout << "Data is already loaded. Replace it with a new file? (y/n): ";
         string answer;
         getline(cin, answer);
-        if (answer != "y" || answer != "Y"){
+        if (answer != "y" && answer != "Y"){
             cout << "Load cancelled.\n";
             return;
         }
@@ -258,15 +258,90 @@ void Menu::displayReviewers() const {
 }
 
 void Menu::displayParameters() const {
-    cout<<"[Stub] Displaying Parameters...\n";
+    // cout<<"[Stub] Displaying Parameters...\n";
+    if (!requireData()){
+        return;
+    }
+
+    const auto& p = parser.getParameters();
+    const auto & cs = parser.getControlSettings();
+
+    cout << "\n--- Parameters ---\n";
+    cout << "  MinReviewsPerSubmission   : " << p.minReviewsPerSubmission    << "\n";
+    cout << "  MaxReviewsPerReviewer     : " << p.maxReviewsPerReviewer      << "\n";
+    cout << "  PrimaryReviewerExpertise  : " << p.primaryReviewerExpertise   << "\n";
+    cout << "  SecondaryReviewerExpertise: " << p.secondaryReviewerExpertise << "\n";
+    cout << "  PrimarySubmissionDomain   : " << p.primarySubmissionDomain    << "\n";
+    cout << "  SecondarySubmissionDomain : " << p.secondarySubmissionDomain  << "\n";
+
+    cout << "\n--- Control Settings ---\n";
+    cout << "  GenerateAssignments: " << cs.generateAssignments << "\n";
+    cout << "  RiskAnalysis       : " << cs.riskAnalysis        << "\n";
+    cout << "  OutputFileName     : " << cs.outputFilename      << "\n";
 }
 
 void Menu::executeMaxFlowAssignment() {
     // Expected to formulate the Review Assignment Problem as a Max-Flow problem
-    cout<<"[Stub] Executing MaxFlow Assignment...\n";
+    // cout<<"[Stub] Executing MaxFlow Assignment...\n";
+    if (!requireData()){
+        return;
+    }
+
+    const auto& cd = parser.getControlSettings();
+
+    if (cs.generateAssignments){
+        cout << "Assignment generaion is disabled (GenerateAssignments = 0 in input file).\n";
+        cout << "The assignment will be computed but not reported.\n";
+    }
+
+    string modeDesc;
+    switch (cs.generateAssignments){
+        case 1:
+            modeDesc = "primary submission domains + primary reviewer expertise only";
+            break;
+        case 2:
+            modeDesc = "primary & secondary submission domains + primary reviewer expertise";
+            break;
+        case 3:
+            modeDesc = "all primary & secondary domains for both submissions and reviewers";
+            break;
+        default:
+            modeDesc = "primary submission domains + primary reviewr expertise only";
+            break;
+    }
+
+    cout << "Mode: " << modeDesc << "\n";
+    cout << "Output file: " << cs.outputFilename << "\n";
+
+    // TODO: still need to build a flow network and run Edmonds-Karp (T 2.1)
+    cout << "[TODO] Maximum Flow assignment not yet implemented.\n";
 }
 
 void Menu::executeRiskAnalysis() {
     // Tests if the absence of one or more reviewers jeopardizes the review process
-    cout<<"[Stub] Executing Risk Analysis...\n";
+    // cout<<"[Stub] Executing Risk Analysis...\n";
+    if (!requireData()){
+        return;
+    }
+
+    const auto& cs = parser.getControlSettings();
+
+    if (cs.riskAnalysis == 0){
+        cout << "Risk analysis is disabled (RiskAnalysis = 0 in input file).\n";
+        return;
+    }
+
+    else if (cs.riskAnalysis == 1){
+        cout << "Risk Analysis K=1: will check if removing any single reviewer\n";
+        cout << " makes it impossible to meet the minimum reviews per submission.\n";
+    }
+
+    else{
+        cout << "Risk Analysis K=" << cs.riskAnalysis << ": will check if removing any group of "
+             << cs.riskAnalysis << " reviewers\n";
+        cout << " makes it impossible to meet the minimum reviews per submission.\n";
+    }
+
+    // TODO: implement risk analysis (T2.2 / T2.3)
+    cout << "[TODO] Risk Analysis not yet implemented.\n";
 }
