@@ -226,7 +226,35 @@ void Menu::displaySubmissions() const {
 }
 
 void Menu::displayReviewers() const {
-    cout<<"[Stub] Displaying Reviewers...\n";
+    // cout<<"[Stub] Displaying Reviewers...\n";
+    if (!requireData()){
+        return;
+    }
+
+    const auto& revs = parser.getReviewers();
+    if (revs.empty()){
+        cout << "No reviewers found.\n";
+        return;
+    }
+
+    cout << "\n--- Reviewers (" << revs.size() << ") ---\n";
+    cout    << left
+            << setw(6)  << "ID"
+            << setw(28) << "Name"
+            << setw(28) << "E-mail"
+            << setw(10) << "Primary"
+            << "Secondary\n";
+    cout << string(78, '-') << "\n";
+
+    for (const auto& r : revs){
+        cout << left
+             << setw(6)  << r.getId()
+             << setw(28) << r.getName()
+             << setw(28) << r.getEmail()
+             << setw(10) << r.getPrimaryExpertise()
+             << (r.getSecondaryExpertise() != 0 ? to_string(r.getSecondaryExpertise()) : "-")
+             << "\n";
+    }
 }
 
 void Menu::displayParameters() const {
