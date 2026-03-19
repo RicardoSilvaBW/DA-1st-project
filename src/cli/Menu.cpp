@@ -6,8 +6,7 @@
 #include <iostream>
 #include <string>
 #include <iomanip>
-#include "../algorithm/FlowNetwork.h"
-#include "../io/OutputWriter.h"
+#include <unordered_set>
 
 using namespace std;
 
@@ -121,7 +120,7 @@ void Menu::readAndParseData() {
 
     // extension isn't .csv
     if (filename.size() < 4 || filename.substr(filename.size() - 4) != ".csv"){
-        cout << "File is not .csv";
+        cout << "File is not .csv\n";
     }
 
     cout << "Parsing \"" << filename << "\"...\n";
@@ -135,25 +134,22 @@ void Menu::readAndParseData() {
     bool valid = true;
 
     // sees if there's a duplicate submission ID
-    // NOT THE MOST EFFICIENT IMPLEMENTATION
     const auto& subs = parser.getSubmissions();
-    for (size_t i = 0; i < subs.size(); ++i){
-        for (size_t j = i + 1; j < subs.size(); ++j){
-            if (subs[i].getId() == subs[j].getId()){
-                cerr << "Error: duplicate submission ID" << subs[i].getId() << ".\n";
+    unordered_set<int> seenIds;
+    for (const auto& s : subs){
+        if (!seenIds.insert(s.getId()).second){
+                cerr << "Error: duplicate submission ID " << s.getId() << ".\n";
                 valid = false;
-            }
         }
     }
 
     // same but for reviewer IDs
     const auto& revs = parser.getReviewers();
-    for (size_t i = 0; i < revs.size(); ++i){
-        for (size_t j = i + 1; j < revs.size(); ++j){
-            if (revs[i].getId() == revs[i].getId()){
-                cerr << "Error: duplicate review ID" << revs[i].getId() << ".\n";
+    unordered_set<int> seenRevs;
+    for (const auto& r : revs){
+        if (!seenRevs.insert(r.getId()).second){
+                cerr << "Error: duplicate review ID " << r.getId() << ".\n";
                 valid = false;
-            }
         }
     }
 
@@ -163,8 +159,8 @@ void Menu::readAndParseData() {
         cerr << "Error: MinReviewsPerSubmission must be a positive integer.\n";
         valid = false;
     }
-    if (params.maxReviewsPerSubmission <= 0){
-        cerr << "Error: MinReviewsPerSubmission must be a positive integer.\n";
+    if (params.maxReviewsPerReviewer <= 0){
+        cerr << "Error: MaxReviewsPerReviewer must be a positive integer.\n";
         valid = false;
     }
 
@@ -211,7 +207,7 @@ void Menu::displaySubmissions() const {
 
         string authors = s.getAuthors();
         if (authors.size() > 19){
-            authors = authors.substr(0, 19) + "..."
+            authors = authors.substr(0, 19) + "...";
         }
 
         cout    << left
@@ -287,9 +283,9 @@ void Menu::executeMaxFlowAssignment() {
         return;
     }
 
-    const auto& cd = parser.getControlSettings();
+    const auto& cs = parser.getControlSettings();
 
-    if (cs.generateAssignments){
+    if (cs.generateAssignments == 0){
         cout << "Assignment generaion is disabled (GenerateAssignments = 0 in input file).\n";
         cout << "The assignment will be computed but not reported.\n";
     }
