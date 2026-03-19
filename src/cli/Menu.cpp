@@ -5,11 +5,23 @@
 #include "Menu.h"
 #include <iostream>
 #include <string>
+#include <iomanip>
+#include "../algorithm/FlowNetwork.h"
+#include "../io/OutputWriter.h"
 
 using namespace std;
 
 Menu::Menu() {
     // Since we don't have all the pieces yet, we can initialize other stuff like the parser
+}
+
+// helpers
+bool Menu::requireData() const {
+    if (!dataLoaded) {
+        cout << "No data loaded. Please use option 1 to read an input file first.\n";
+        return false;
+    }
+    return true;
 }
 
 void Menu::displayMenuOptions() const {
@@ -86,7 +98,86 @@ void Menu::runInteractive() {
 }
 
 void Menu::readAndParseData() {
-    cout<<"[Stub] Reading and Parsing CSV...\n";
+    // cout<<"[Stub] Reading and Parsing CSV...\n";
+
+    if (dataLoaded){
+        cout << "Data is already loaded. Replace it with a new file? (y/n): ";
+        string answer;
+        getline(cin, answer);
+        if (answer != "y" || answer != "Y"){
+            cout << "Load cancelled.\n";
+            return;
+        }
+    }
+
+    cout << "Enter input file path (.csv): ";
+    string filename;
+    getline(cin, filename);
+
+    if (filename.empty()){
+        cout << "No filename entered.\n";
+        return;
+    }
+
+    // extension isn't .csv
+    if (filename.size() < 4 || filename.substr(filename.size() - 4) != ".csv"){
+        cout << "File is not .csv";
+    }
+
+    cout << "Parsing \"" << filename << "\"...\n";
+
+    if (!parser.parseFile(filename)){
+        cout << "Failed to parse file.\n";
+        dataLoaded = false;
+        return;
+    }
+
+    bool valid = true;
+
+    // sees if there's a duplicate submission ID
+    // NOT THE MOST EFFICIENT IMPLEMENTATION
+    const auto& subs = parser.getSubmissions();
+    for (size_t i = 0; i < subs.size(); ++i){
+        for (size_t j = i + 1; j < subs.size(); ++j){
+            if (subs[i].getId() == subs[j].getId()){
+                cerr << "Error: duplicate submission ID" << subs[i].getId() << ".\n";
+                valid = false;
+            }
+        }
+    }
+
+    // same but for reviewer IDs
+    const auto& revs = parser.getReviewers();
+    for (size_t i = 0; i < revs.size(); ++i){
+        for (size_t j = i + 1; j < revs.size(); ++j){
+            if (revs[i].getId() == revs[i].getId()){
+                cerr << "Error: duplicate review ID" << revs[i].getId() << ".\n";
+                valid = false;
+            }
+        }
+    }
+
+    // checks the required parameter
+    const auto& params = parser.getParameters();
+    if (params.minReviewsPerSubmission <= 0){
+        cerr << "Error: MinReviewsPerSubmission must be a positive integer.\n";
+        valid = false;
+    }
+    if (params.maxReviewsPerSubmission <= 0){
+        cerr << "Error: MinReviewsPerSubmission must be a positive integer.\n";
+        valid = false;
+    }
+
+    if (!valid){
+        cout << "File rejected due to consistency errors.\n";
+        dataLoaded = false;
+        return;
+    }
+
+    dataLoaded = true;
+    cout    << "Successfully loaded: "
+            << subs.size() << " submission(s), "
+            << revs.size() << " reviewer(s).\n";
 }
 
 void Menu::displaySubmissions() const {
