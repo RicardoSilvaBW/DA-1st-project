@@ -181,7 +181,48 @@ void Menu::readAndParseData() {
 }
 
 void Menu::displaySubmissions() const {
-    cout<<"[Stub] Displaying Submissions...\n";
+    // cout<<"[Stub] Displaying Submissions...\n";
+    if (!requireData()){
+        return;
+    }
+
+    const auto& subs = parser.getSubmissions();
+    if (subs.empty()){
+        cout << "No submissions found.\n";
+        return;
+    }
+
+    cout << "\n--- Submissions (" << subs.size() << ")---\n";
+    cout    << left
+            << setw(6)  << "ID"
+            << setw(40) << "Title"
+            << setw(22) << "Authors"
+            << setw(28) << "E-mail"
+            << setw(8)  << "Primary"
+            << "Secondary\n";
+    cout << string(110, '-') << "\n";
+
+    for (const auto& s : subs){
+
+        string title = s.getTitle();
+        if (title.size() > 37){
+            title = title.substr(0, 37) + "...";
+        }
+
+        string authors = s.getAuthors();
+        if (authors.size() > 19){
+            authors = authors.substr(0, 19) + "..."
+        }
+
+        cout    << left
+                << setw(6)  << s.getId()
+                << setw(40) << title
+                << setw(22) << authors
+                << setw(28) << s.getEmail()
+                << setw(8)  << s.getPrimaryTopic()
+                << (s.getSecondaryTopic() != 0 ? to_string(s.getSecondaryTopic()) : "-")
+                << "\n";
+    }
 }
 
 void Menu::displayReviewers() const {
