@@ -3,11 +3,12 @@
 //
 
 #include "MaxFlow.h"
+#include <climits>
 
 MaxFlow::MaxFlow(Graph<int> *graph, Vertex<int> *s, Vertex<int> *t)
-                : graph(graph), s(s), t(t) {}
+                : g(graph), s(s), t(t) {}
 
-void testAndVisit(std::queue<Vertex<int>*> &q, Edge<int> *e, Vertex<int> *w, int residual) {
+void MaxFlow::testAndVisit(std::queue<Vertex<int>*> &q, Edge<int> *e, Vertex<int> *w, int residual) {
     if (!w->isVisited() && residual > 0) {
         w->setVisited(true);
         w->setPath(e);
@@ -15,7 +16,7 @@ void testAndVisit(std::queue<Vertex<int>*> &q, Edge<int> *e, Vertex<int> *w, int
     }
 }
 
-bool findAugmentingPath(Graph<int> *g, Vertex<int> *s, Vertex<int> *t) {
+bool MaxFlow::findAugmentingPath() {
     for (auto v: g->getVertexSet()) {
         v->setVisited(false);
     }
@@ -33,7 +34,7 @@ bool findAugmentingPath(Graph<int> *g, Vertex<int> *s, Vertex<int> *t) {
     return t->isVisited();
 }
 
-int findMinResidualAlongPath(Vertex<int> *s, Vertex<int> *t) {
+int MaxFlow::findMinResidualAlongPath() {
     int f = INT_MAX;
     auto v = t;
     while (v != s) {
@@ -49,7 +50,7 @@ int findMinResidualAlongPath(Vertex<int> *s, Vertex<int> *t) {
     return f;
 }
 
-void augmentFlowAlongPath(Vertex<int> *s, Vertex<int> *t, double f) {
+void MaxFlow::augmentFlowAlongPath(int f) {
     auto v = t;
     while (v != s) {
         auto e = v->getPath();
@@ -63,16 +64,14 @@ void augmentFlowAlongPath(Vertex<int> *s, Vertex<int> *t, double f) {
     }
 }
 
-void edmondsKarp(Graph<int> *g, int s, int t) {
-    Vertex<int> *source = g->findVertex(source);
-    Vertex<int> *target = g->findVertex(target);
+int MaxFlow::edmondsKarp() {
     for (auto v: g->getVertexSet()) {
         for (auto e: v->getAdj()) {
             e->setFlow(0);
         }
     }
-    while (findAugmentingPath(g, source, target)) {
-        double f = findMinResidualAlongPath(source, target);
-        augmentFlowAlongPath(source, target, f);
+    while (findAugmentingPath()) {
+        int f = findMinResidualAlongPath();
+        augmentFlowAlongPath(f);
     }
 }
