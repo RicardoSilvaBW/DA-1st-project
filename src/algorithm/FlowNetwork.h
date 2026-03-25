@@ -35,8 +35,8 @@ private:
 
     void addVertices();
     void addCapacityEdges();
-    void addMatchingEdges();
     bool topicsMatch(const Reviewer& reviewer, const Submission& submission);
+    void addMatchingEdges();
 
 public:
 

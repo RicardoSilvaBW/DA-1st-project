@@ -18,29 +18,54 @@ FlowNetwork::~FlowNetwork() {
 }
 
 void FlowNetwork::addVertices() {
-    // TODO: add super-source vertex (ID 0)
-    // TODO: add reviewer vertices (IDs 1 to N) and populate reviewerMap
-    // TODO: add submission vertices (IDs N+1 to N+M) and populate submissionMap
-    // TODO: add super-sink vertex (ID N+M+1)
-    // TODO: set source and sink pointers
+    if (g->addVertex(0))
+        source = g->findVertex(0);
+    for (int i = 0 ; i < numOfRev ; i++) {
+        g->addVertex(i + 1);
+        reviewerMap.insert({i + 1, reviewers[i]});
+    }
+    for (int i = 0 ; i < numOfSub ; i++ ) {
+        g->addVertex(numOfRev + i + 1);
+        submissionMap.insert({numOfRev + i + 1, submissions[i]});
+    }
+    if (g->addVertex(numOfRevs + numOfSub + 1))
+        sink = g->findVertex(numOfRev + numOfSub + 1);
 }
 
 void FlowNetwork::addCapacityEdges() {
-    // TODO: add edges from super-source to each reviewer (cap = MaxReviewsPerReviewer)
-    // TODO: add edges from each submission to super-sink (cap = MinReviewsPerSubmission)
-}
-
-void FlowNetwork::addMatchingEdges() {
-    // TODO: for each reviewer-submission pair, call topicsMatch()
-    // TODO: if match found, add edge with capacity 1
+    for (int i = 0 ; i < numOfRev ; i++) {
+        g->addEdge(0, i + 1, parameters.maxReviewsPerReviewer);
+    }
+    for (int i = 0 ; i < numOfSub ; i++) {
+        g->addEdge(numOfRev + i + 1, numOfRev + numOfSub + 1, parameters.minReviewsPerSubmission);
+    }
 }
 
 bool FlowNetwork::topicsMatch(const Reviewer& reviewer, const Submission& submission) {
-    // TODO: check domains based on controlSettings.generateAssignments mode
-    // mode 1: primary reviewer expertise == primary submission topic
-    // mode 2: also consider secondary domains
-    // mode 3: all domain combinations
-    return false;
+    bool primaryMatch = reviewer.getPrimaryExpertise() == submission.getPrimaryTopic();
+
+    bool secondaryMatch = (reviewer.getPrimaryExpertise() == submission.getSecondaryTopic() && submission.getSecondaryTopic() != 0)
+                       || (reviewer.getSecondaryExpertise() == submission.getPrimaryTopic() && reviewer.getSecondaryExpertise() != 0);
+
+    bool allMatch = secondaryMatch
+                 || (reviewer.getSecondaryExpertise() != 0 && submission.getSecondaryTopic() != 0
+                     && reviewer.getSecondaryExpertise() == submission.getSecondaryTopic());
+
+    switch (controlSettings.generateAssignments) {
+        case 1: return primaryMatch;
+        case 2: return primaryMatch || secondaryMatch;
+        case 3: return primaryMatch || allMatch;
+        default: return false;
+    }
+}
+
+void FlowNetwork::addMatchingEdges() {
+    for (int i = 0 ; i < numOfRev ; i++) {
+        for (int j = 0 ; j < numOfSub ; j++) {
+            if (topicsMatch(reviewers[i], submissions[j]))
+                g->addEdge(i + 1, numOfRev + j + 1, 1);
+        }
+    }
 }
 
 void FlowNetwork::build() {

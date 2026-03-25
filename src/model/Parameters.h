@@ -6,12 +6,12 @@
 #define DA_1ST_PROJECT_PARAMETERS_H
 
 struct Parameters {
-    int minReviewsPerSubmission;
-    int maxReviewsPerReviewer;
-    int primaryReviewerExpertise;
-    int secondaryReviewerExpertise;
-    int primarySubmissionDomain;
-    int secondarySubmissionDomain;
+    double minReviewsPerSubmission;
+    double maxReviewsPerReviewer;
+    double primaryReviewerExpertise;
+    double secondaryReviewerExpertise;
+    double primarySubmissionDomain;
+    double secondarySubmissionDomain;
 };
 
 #endif //DA_1ST_PROJECT_PARAMETERS_H
