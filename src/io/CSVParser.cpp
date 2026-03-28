@@ -10,7 +10,7 @@
 using namespace std;
 
 CSVParser::CSVParser() {
-    //Constructor
+    // Constructor
 }
 
 const vector<Submission>& CSVParser::getSubmissions() const {
@@ -26,14 +26,14 @@ const ControlSettings& CSVParser::getControlSettings() const {
     return controlSettings;
 }
 
-string CSVParser::trim(const string& str) const {//cleans the csv files
-    size_t first = str.find_first_not_of(" \t\n\r");//finds common whitespace characters in files
+string CSVParser::trim(const string& str) const { // cleans the csv files
+    size_t first = str.find_first_not_of(" \t\n\r"); // finds common whitespace characters in files
     if (string::npos == first) return "";
     size_t last = str.find_last_not_of(" \t\n\r");
-    return str.substr(first, (last - first + 1));//extracts the clean string, starts at index first, and ends in the index last-first+1
+    return str.substr(first, (last - first + 1)); // extracts the clean string, starts at index first, and ends in the index last-first+1
 }
 
-string CSVParser::stripQuotes(const string& str) const {//cleans surrounding quotes from csv fields when they exist
+string CSVParser::stripQuotes(const string& str) const { // cleans surrounding quotes from csv fields when they exist
     string cleaned = trim(str);
     if (cleaned.size() >= 2 && cleaned.front() == '"' && cleaned.back() == '"') {
         return cleaned.substr(1, cleaned.size() - 2);
@@ -41,7 +41,7 @@ string CSVParser::stripQuotes(const string& str) const {//cleans surrounding quo
     return cleaned;
 }
 
-vector<string> CSVParser::splitCSVLine(const string& line) const {//splits a csv line by commas and trims each field
+vector<string> CSVParser::splitCSVLine(const string& line) const { // splits a csv line by commas and trims each field
     vector<string> fields;
     string field;
     stringstream ss(line);
@@ -57,49 +57,56 @@ vector<string> CSVParser::splitCSVLine(const string& line) const {//splits a csv
     return fields;
 }
 
-bool CSVParser::parseFile(const string& filename) {//the bool flag described in the project description
+void CSVParser::clear() {
+    submissions.clear();
+    reviewers.clear();
+    submissionIds.clear();
+    reviewerIds.clear();
+    parameters = Parameters{};
+    controlSettings = ControlSettings{};
+    hasError = false;
+}
+
+bool CSVParser::parseFile(const string& filename) { // the bool flag described in the project description
     ifstream file(filename);
     if (!file.is_open()) {
-        cout<<"Error: Could not open file: "<<filename<<"\n";
+        cerr << "Error: Could not open file: " << filename << "\n";
         return false;
     }
 
-    submissions.clear();
-    reviewers.clear();
-    parameters = Parameters{};
-    controlSettings = ControlSettings{};
+    clear();
 
     string line;
-    string currentSection="";
+    string currentSection = "";
 
     while (getline(file, line)) {
         string trimmedLine = trim(line);
         if (trimmedLine.empty()) continue;
 
-        //We need to check if the line is a header of the section or a comment
+        // We need to check if the line is a header of the section or a comment
         if (trimmedLine[0] == '#') {
-            if (trimmedLine.find("#Submissions")==0) {
+            if (trimmedLine.find("#Submissions") == 0) {
                 currentSection = "Submissions";
             }
-            else if (trimmedLine.find("#Reviewers")==0) {
+            else if (trimmedLine.find("#Reviewers") == 0) {
                 currentSection = "Reviewers";
             }
-            else if (trimmedLine.find("#Parameters")==0) {
+            else if (trimmedLine.find("#Parameters") == 0) {
                 currentSection = "Parameters";
             }
-            else if (trimmedLine.find("#Control")==0) {
+            else if (trimmedLine.find("#Control") == 0) {
                 currentSection = "Control";
             }
-            continue;//it continues whenever it's none of those 4
+            continue; // it continues whenever it's none of those 4
         }
-        //In case a '#' is present in the line, we remove everything after it
+        // In case a '#' is present in the line, we remove everything after it
         size_t hashPos = trimmedLine.find("#");
         if (hashPos != string::npos) {
             trimmedLine = trim(trimmedLine.substr(0, hashPos));
             if (trimmedLine.empty()) continue;
         }
 
-        //Gives the data to the correct functions of the parser
+        // Gives the data to the correct functions of the parser
         if (currentSection == "Submissions") {
             parseSubmissionLine(trimmedLine);
         }
@@ -114,95 +121,162 @@ bool CSVParser::parseFile(const string& filename) {//the bool flag described in 
         }
     }
     file.close();
+
+    if (hasError) {
+        cerr << "Parsing failed due to inconsistent data.\n";
+        return false;
+    }
     return true;
 }
 
 void CSVParser::parseSubmissionLine(const string& line) {
     vector<string> fields = splitCSVLine(line);
     if (fields.size() != 6) {
-        cout<<"Warning: Invalid submission line: "<<line<<"\n";
+        cerr << "Warning: Invalid submission line (wrong field count): " << line << "\n";
+        hasError = true;
         return;
     }
 
-    int id = stoi(fields[0]);
-    string title = stripQuotes(fields[1]);
-    string authors = stripQuotes(fields[2]);
-    string email = stripQuotes(fields[3]);
-    int primary = stoi(fields[4]);
-    int secondary = fields[5].empty() ? 0 : stoi(fields[5]);
+    try {
+        int id = stoi(fields[0]);
+        if (submissionIds.find(id) != submissionIds.end()) {
+            cerr << "Error: Duplicate submission ID found: " << id << "\n";
+            hasError = true;
+            return;
+        }
 
-    submissions.emplace_back(id, title, authors, email, primary, secondary);
+        string title = stripQuotes(fields[1]);
+        string authors = stripQuotes(fields[2]);
+        string email = stripQuotes(fields[3]);
+
+        if (fields[4].empty()) {
+            cerr << "Error: Submission ID " << id << " is missing mandatory primary topic.\n";
+            hasError = true;
+            return;
+        }
+        int primary = stoi(fields[4]);
+        if (primary < 1) {
+            cerr << "Warning: Submission ID " << id << " has topic ID < 1: " << primary << "\n";
+        }
+        int secondary = fields[5].empty() ? 0 : stoi(fields[5]);
+        if (secondary < 0) {
+            cerr << "Warning: Submission ID " << id << " has secondary topic ID < 0: " << secondary << "\n";
+        }
+
+        submissions.emplace_back(id, title, authors, email, primary, secondary);
+        submissionIds.insert(id);
+    } catch (const exception& e) {
+        cerr << "Error: Numeric conversion failed in submission line: " << line << " (" << e.what() << ")\n";
+        hasError = true;
+    }
 }
 
 void CSVParser::parseReviewerLine(const string& line) {
     vector<string> fields = splitCSVLine(line);
     if (fields.size() != 5) {
-        cout<<"Warning: Invalid reviewer line: "<<line<<"\n";
+        cerr << "Warning: Invalid reviewer line (wrong field count): " << line << "\n";
+        hasError = true;
         return;
     }
 
-    int id = stoi(fields[0]);
-    string name = stripQuotes(fields[1]);
-    string email = stripQuotes(fields[2]);
-    int primary = stoi(fields[3]);
-    int secondary = fields[4].empty() ? 0 : stoi(fields[4]);
+    try {
+        int id = stoi(fields[0]);
+        if (reviewerIds.find(id) != reviewerIds.end()) {
+            cerr << "Error: Duplicate reviewer ID found: " << id << "\n";
+            hasError = true;
+            return;
+        }
 
-    reviewers.emplace_back(id, name, email, primary, secondary);
+        string name = stripQuotes(fields[1]);
+        string email = stripQuotes(fields[2]);
+
+        if (fields[3].empty()) {
+            cerr << "Error: Reviewer ID " << id << " is missing mandatory primary expertise.\n";
+            hasError = true;
+            return;
+        }
+        int primary = stoi(fields[3]);
+        if (primary < 1) {
+            cerr << "Warning: Reviewer ID " << id << " has expertise ID < 1: " << primary << "\n";
+        }
+        int secondary = fields[4].empty() ? 0 : stoi(fields[4]);
+        if (secondary < 0) {
+            cerr << "Warning: Reviewer ID " << id << " has secondary expertise ID < 0: " << secondary << "\n";
+        }
+
+        reviewers.emplace_back(id, name, email, primary, secondary);
+        reviewerIds.insert(id);
+    } catch (const exception& e) {
+        cerr << "Error: Numeric conversion failed in reviewer line: " << line << " (" << e.what() << ")\n";
+        hasError = true;
+    }
 }
 
 void CSVParser::parseParameterLine(const string& line) {
     vector<string> fields = splitCSVLine(line);
     if (fields.size() != 2) {
-        cout<<"Warning: Invalid parameter line: "<<line<<"\n";
+        cerr << "Warning: Invalid parameter line: " << line << "\n";
+        hasError = true;
         return;
     }
 
-    string key = stripQuotes(fields[0]);
-    int value = stoi(fields[1]);
+    try {
+        string key = stripQuotes(fields[0]);
+        int value = stoi(fields[1]);
 
-    if (key == "MinReviewsPerSubmission") {
-        parameters.minReviewsPerSubmission = value;
-    }
-    else if (key == "MaxReviewsPerReviewer") {
-        parameters.maxReviewsPerReviewer = value;
-    }
-    else if (key == "PrimaryReviewerExpertise") {
-        parameters.primaryReviewerExpertise = value;
-    }
-    else if (key == "SecondaryReviewerExpertise") {
-        parameters.secondaryReviewerExpertise = value;
-    }
-    else if (key == "PrimarySubmissionDomain") {
-        parameters.primarySubmissionDomain = value;
-    }
-    else if (key == "SecondarySubmissionDomain") {
-        parameters.secondarySubmissionDomain = value;
-    }
-    else {
-        cout<<"Warning: Unknown parameter key: "<<key<<"\n";
+        if (key == "MinReviewsPerSubmission") {
+            parameters.minReviewsPerSubmission = value;
+        }
+        else if (key == "MaxReviewsPerReviewer") {
+            parameters.maxReviewsPerReviewer = value;
+        }
+        else if (key == "PrimaryReviewerExpertise") {
+            parameters.primaryReviewerExpertise = value;
+        }
+        else if (key == "SecondaryReviewerExpertise") {
+            parameters.secondaryReviewerExpertise = value;
+        }
+        else if (key == "PrimarySubmissionDomain") {
+            parameters.primarySubmissionDomain = value;
+        }
+        else if (key == "SecondarySubmissionDomain") {
+            parameters.secondarySubmissionDomain = value;
+        }
+        else {
+            cerr << "Warning: Unknown parameter key: " << key << "\n";
+        }
+    } catch (const exception& e) {
+        cerr << "Error: Numeric conversion failed in parameter: " << line << " (" << e.what() << ")\n";
+        hasError = true;
     }
 }
 
 void CSVParser::parseControlLine(const string& line) {
     vector<string> fields = splitCSVLine(line);
     if (fields.size() != 2) {
-        cout<<"Warning: Invalid control line: "<<line<<"\n";
+        cerr << "Warning: Invalid control line: " << line << "\n";
+        hasError = true;
         return;
     }
 
-    string key = stripQuotes(fields[0]);
-    string value = stripQuotes(fields[1]);
+    try {
+        string key = stripQuotes(fields[0]);
+        string value = stripQuotes(fields[1]);
 
-    if (key == "GenerateAssignments") {
-        controlSettings.generateAssignments = stoi(value);
-    }
-    else if (key == "RiskAnalysis") {
-        controlSettings.riskAnalysis = stoi(value);
-    }
-    else if (key == "OutputFileName") {
-        controlSettings.outputFilename = value;
-    }
-    else {
-        cout<<"Warning: Unknown control key: "<<key<<"\n";
+        if (key == "GenerateAssignments") {
+            controlSettings.generateAssignments = stoi(value);
+        }
+        else if (key == "RiskAnalysis") {
+            controlSettings.riskAnalysis = stoi(value);
+        }
+        else if (key == "OutputFileName") {
+            controlSettings.outputFilename = value;
+        }
+        else {
+            cerr << "Warning: Unknown control key: " << key << "\n";
+        }
+    } catch (const exception& e) {
+        cerr << "Error: Numeric conversion failed in control line: " << line << " (" << e.what() << ")\n";
+        hasError = true;
     }
 }
