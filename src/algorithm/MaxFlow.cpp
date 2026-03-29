@@ -40,10 +40,10 @@ int MaxFlow::findMinResidualAlongPath() {
     while (v != s) {
         auto e = v->getPath();
         if (e->getDest() == v) {
-            f = std::min(f, e->getWeight() - e->getFlow());
+            f = std::min(f, (int)(e->getWeight() - e->getFlow()));
             v = e->getOrig();
         } else {
-            f = std::min(f, e->getFlow());
+            f = std::min(f, (int)(e->getFlow()));
             v = e->getDest();
         }
     }
@@ -74,4 +74,10 @@ int MaxFlow::edmondsKarp() {
         int f = findMinResidualAlongPath();
         augmentFlowAlongPath(f);
     }
+
+    int totalFlow = 0;
+    for (auto edge : s->getAdj()){
+        totalFlow += edge->getFlow();
+    }
+    return totalFlow;
 }
