@@ -2,6 +2,11 @@
 // Created by andresantos on 09/03/26.
 //
 
+/**
+ * @file CSVParser.cpp
+ * @brief Implementation of the CSVParser class.
+ */
+
 #include "CSVParser.h"
 #include <iostream>
 #include <fstream>
@@ -9,8 +14,11 @@
 
 using namespace std;
 
+/**
+ * @brief Constructor for CSVParser.
+ */
 CSVParser::CSVParser() {
-    // Constructor
+    
 }
 
 const vector<Submission>& CSVParser::getSubmissions() const {
@@ -26,14 +34,14 @@ const ControlSettings& CSVParser::getControlSettings() const {
     return controlSettings;
 }
 
-string CSVParser::trim(const string& str) const { // cleans the csv files
-    size_t first = str.find_first_not_of(" \t\n\r"); // finds common whitespace characters in files
+string CSVParser::trim(const string& str) const { 
+    size_t first = str.find_first_not_of(" \t\n\r"); 
     if (string::npos == first) return "";
     size_t last = str.find_last_not_of(" \t\n\r");
-    return str.substr(first, (last - first + 1)); // extracts the clean string, starts at index first, and ends in the index last-first+1
+    return str.substr(first, (last - first + 1)); 
 }
 
-string CSVParser::stripQuotes(const string& str) const { // cleans surrounding quotes from csv fields when they exist
+string CSVParser::stripQuotes(const string& str) const { 
     string cleaned = trim(str);
     if (cleaned.size() >= 2 && cleaned.front() == '"' && cleaned.back() == '"') {
         return cleaned.substr(1, cleaned.size() - 2);
@@ -41,7 +49,7 @@ string CSVParser::stripQuotes(const string& str) const { // cleans surrounding q
     return cleaned;
 }
 
-vector<string> CSVParser::splitCSVLine(const string& line) const { // splits a csv line by commas and trims each field
+vector<string> CSVParser::splitCSVLine(const string& line) const { 
     vector<string> fields;
     string field;
     stringstream ss(line);
@@ -57,6 +65,9 @@ vector<string> CSVParser::splitCSVLine(const string& line) const { // splits a c
     return fields;
 }
 
+/**
+ * @brief Clears the internal data structures.
+ */
 void CSVParser::clear() {
     submissions.clear();
     reviewers.clear();
@@ -67,7 +78,13 @@ void CSVParser::clear() {
     hasError = false;
 }
 
-bool CSVParser::parseFile(const string& filename) { // the bool flag described in the project description
+/**
+ * @brief Parses the input CSV file.
+ * @param filename Path to the CSV file.
+ * @return true if successful, false otherwise.
+ * @complexity O(N) where N is number of characters in file.
+ */
+bool CSVParser::parseFile(const string& filename) { 
     ifstream file(filename);
     if (!file.is_open()) {
         cerr << "Error: Could not open file: " << filename << "\n";
@@ -83,7 +100,7 @@ bool CSVParser::parseFile(const string& filename) { // the bool flag described i
         string trimmedLine = trim(line);
         if (trimmedLine.empty()) continue;
 
-        // We need to check if the line is a header of the section or a comment
+        
         if (trimmedLine[0] == '#') {
             if (trimmedLine.find("#Submissions") == 0) {
                 currentSection = "Submissions";
@@ -97,16 +114,16 @@ bool CSVParser::parseFile(const string& filename) { // the bool flag described i
             else if (trimmedLine.find("#Control") == 0) {
                 currentSection = "Control";
             }
-            continue; // it continues whenever it's none of those 4
+            continue; 
         }
-        // In case a '#' is present in the line, we remove everything after it
+        
         size_t hashPos = trimmedLine.find("#");
         if (hashPos != string::npos) {
             trimmedLine = trim(trimmedLine.substr(0, hashPos));
             if (trimmedLine.empty()) continue;
         }
 
-        // Gives the data to the correct functions of the parser
+        
         if (currentSection == "Submissions") {
             parseSubmissionLine(trimmedLine);
         }

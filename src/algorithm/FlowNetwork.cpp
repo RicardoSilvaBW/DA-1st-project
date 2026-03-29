@@ -2,8 +2,20 @@
 // Created by ricar on 3/20/2026.
 //
 
+/**
+ * @file FlowNetwork.cpp
+ * @brief Implementation of the FlowNetwork class.
+ */
+
 #include "FlowNetwork.h"
 
+/**
+ * @brief Constructor for FlowNetwork.
+ * @param reviewers Vector of reviewers to include in the network.
+ * @param submissions Vector of submissions to include in the network.
+ * @param parameters Configuration parameters (min/max reviews).
+ * @param controlSettings Settings for assignment generation.
+ */
 FlowNetwork::FlowNetwork(const std::vector<Reviewer>& reviewers,
                          const std::vector<Submission>& submissions,
                          const Parameters& parameters,
@@ -13,10 +25,17 @@ FlowNetwork::FlowNetwork(const std::vector<Reviewer>& reviewers,
       g(new Graph<int>()), source(nullptr), sink(nullptr),
       totalFlow(0), numOfRev(reviewers.size()), numOfSub(submissions.size()) {}
 
+/**
+ * @brief Destructor for FlowNetwork. Cleans up the graph.
+ */
 FlowNetwork::~FlowNetwork() {
     delete g;
 }
 
+/**
+ * @brief Adds vertices to the flow network (source, sink, reviewers, submissions).
+ * @complexity O(R + S) where R is the number of reviewers and S is the number of submissions.
+ */
 void FlowNetwork::addVertices() {
     if (g->addVertex(0))
         source = g->findVertex(0);
@@ -32,6 +51,10 @@ void FlowNetwork::addVertices() {
         sink = g->findVertex(numOfRev + numOfSub + 1);
 }
 
+/**
+ * @brief Adds edges with capacities from source to reviewers and submissions to sink.
+ * @complexity O(R + S) where R is the number of reviewers and S is the number of submissions.
+ */
 void FlowNetwork::addCapacityEdges() {
     for (int i = 0 ; i < numOfRev ; i++) {
         g->addEdge(0, i + 1, parameters.maxReviewsPerReviewer);
@@ -41,6 +64,13 @@ void FlowNetwork::addCapacityEdges() {
     }
 }
 
+/**
+ * @brief Determines if a reviewer is compatible with a submission based on the control settings.
+ * @param reviewer The reviewer to check.
+ * @param submission The submission to check.
+ * @return true if they are compatible, false otherwise.
+ * @complexity O(1)
+ */
 bool FlowNetwork::topicsMatch(const Reviewer& reviewer, const Submission& submission) {
     bool primaryMatch = (reviewer.getPrimaryExpertise() == submission.getPrimaryTopic());
 
@@ -59,6 +89,10 @@ bool FlowNetwork::topicsMatch(const Reviewer& reviewer, const Submission& submis
     }
 }
 
+/**
+ * @brief Adds edges between compatible reviewers and submissions.
+ * @complexity O(R * S) where R is the number of reviewers and S is the number of submissions.
+ */
 void FlowNetwork::addMatchingEdges() {
     for (int i = 0 ; i < numOfRev ; i++) {
         for (int j = 0 ; j < numOfSub ; j++) {
@@ -68,12 +102,21 @@ void FlowNetwork::addMatchingEdges() {
     }
 }
 
+/**
+ * @brief Builds the flow network by adding vertices and edges.
+ * @complexity O(R * S) where R is the number of reviewers and S is the number of submissions.
+ */
 void FlowNetwork::build() {
     addVertices();
     addCapacityEdges();
     addMatchingEdges();
 }
 
+/**
+ * @brief Executes the Edmonds-Karp algorithm to find the maximum flow.
+ * @return Total flow assigned.
+ * @complexity O(V * E^2) where V = R+S+2 and E = R*S + R + S.
+ */
 int FlowNetwork::run() {
     if (source == nullptr || sink == nullptr) return 0;
     MaxFlow maxFlow(g, source, sink);
@@ -81,6 +124,11 @@ int FlowNetwork::run() {
     return totalFlow;
 }
 
+/**
+ * @brief Extracts the review assignments from the flow network after running the algorithm.
+ * @return Vector of ReviewAssignment objects.
+ * @complexity O(V + E)
+ */
 std::vector<ReviewAssignment> FlowNetwork::getReviewAssignments() {
     std::vector<ReviewAssignment> assignments;
     for (int i = 0; i < numOfRev; i++) {
@@ -92,13 +140,42 @@ std::vector<ReviewAssignment> FlowNetwork::getReviewAssignments() {
                 int revId = v->getInfo();
                 const Reviewer& r = reviewerMap.at(revId);
                 const Submission& s = submissionMap.at(subId);
-                assignments.emplace_back(s.getId(), r.getId(), s.getPrimaryTopic(), r.getPrimaryExpertise());
+                
+                int matchedSubDomain = 0;
+                int matchedRevDomain = 0;
+                
+                
+                bool pMatch = (r.getPrimaryExpertise() == s.getPrimaryTopic());
+                bool sMatchSub = (r.getPrimaryExpertise() == s.getSecondaryTopic() && s.getSecondaryTopic() != 0);
+                bool sMatchRev = (r.getSecondaryExpertise() == s.getPrimaryTopic() && r.getSecondaryExpertise() != 0);
+                bool bothSecondary = (r.getSecondaryExpertise() != 0 && s.getSecondaryTopic() != 0 && r.getSecondaryExpertise() == s.getSecondaryTopic());
+
+                if (pMatch) {
+                    matchedSubDomain = s.getPrimaryTopic();
+                    matchedRevDomain = r.getPrimaryExpertise();
+                } else if (sMatchSub) {
+                    matchedSubDomain = s.getSecondaryTopic();
+                    matchedRevDomain = r.getPrimaryExpertise();
+                } else if (sMatchRev) {
+                    matchedSubDomain = s.getPrimaryTopic();
+                    matchedRevDomain = r.getSecondaryExpertise();
+                } else if (bothSecondary) {
+                    matchedSubDomain = s.getSecondaryTopic();
+                    matchedRevDomain = r.getSecondaryExpertise();
+                }
+
+                assignments.emplace_back(s.getId(), r.getId(), matchedSubDomain, matchedRevDomain);
             }
         }
     }
     return assignments;
 }
 
+/**
+ * @brief Identifies submissions that did not receive the minimum required reviews.
+ * @return Vector of MissingReview objects.
+ * @complexity O(V + E)
+ */
 std::vector<MissingReview> FlowNetwork::getMissingReviews() {
     std::vector<MissingReview> missing;
     for (int i = 0; i < numOfSub; i++) {

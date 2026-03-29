@@ -2,57 +2,113 @@
 // Created by andresantos on 09/03/26.
 //
 
+/**
+ * @file CSVParser.h
+ * @brief Header for the CSVParser class.
+ */
+
 #ifndef DA_1ST_PROJECT_CSVPARSER_H
 #define DA_1ST_PROJECT_CSVPARSER_H
 
 #include <set>
 #include <string>
 #include <vector>
-//The following includes are here because we need to store the data we parse. I think it makes sense to do it like that, we can change it later on.
+
 #include "../model/Submission.h"
 #include "../model/Reviewer.h"
 #include "../model/Parameters.h"
 #include "../model/ControlSettings.h"
 
+/**
+ * @brief CSV parser for conference data files.
+ * 
+ * Task 1.2: Read and Parse the Input Data.
+ */
 class CSVParser {
     public:
     CSVParser();
 
-    // Bool flag to check if the file parsing was successful, it returns false if it has insconsistent values, the project descrption implies we do this
+    /**
+     * @brief Parses a CSV file and loads data into internal structures.
+     * @param filename Path to the CSV file.
+     * @return true if parsing was successful and data is consistent, false otherwise.
+     * @complexity O(N) where N is the number of characters in the file.
+     */
     bool parseFile(const std::string& filename);
 
-    // Cleans up internal state for a new parse
+    /**
+     * @brief Cleans up internal state for a new parse.
+     */
     void clear();
 
-    // These functions allow the algorithms and menu to access the loaded data
+    /**
+     * @return Loaded submissions.
+     */
     const std::vector<Submission>& getSubmissions() const;
+
+    /**
+     * @return Loaded reviewers.
+     */
     const std::vector<Reviewer>& getReviewers() const;
+
+    /**
+     * @return Current parameters.
+     */
     const Parameters& getParameters() const;
+
+    /**
+     * @return Current control settings.
+     */
     const ControlSettings& getControlSettings() const;
 
     private:
-    // Stores the data we parse
     std::vector<Submission> submissions;
     std::vector<Reviewer> reviewers;
     Parameters parameters;
     ControlSettings controlSettings;
 
-    // Track IDs to detect duplicates
     std::set<int> submissionIds;
     std::set<int> reviewerIds;
 
-    // Internal error tracking
     bool hasError = false;
 
-    // These functions parses individual lines for each section of the csv
+    /**
+     * @brief Internal helper to parse a submission line.
+     * @complexity O(L) where L is line length.
+     */
     void parseSubmissionLine(const std::string& line);
+
+    /**
+     * @brief Internal helper to parse a reviewer line.
+     * @complexity O(L)
+     */
     void parseReviewerLine(const std::string& line);
+
+    /**
+     * @brief Internal helper to parse a parameter line.
+     * @complexity O(L)
+     */
     void parseParameterLine(const std::string& line);
+
+    /**
+     * @brief Internal helper to parse a control line.
+     * @complexity O(L)
+     */
     void parseControlLine(const std::string& line);
 
-    // Function to trim and clean spaces and quotes from the csv
+    /**
+     * @brief Utility to trim whitespace from a string.
+     */
     std::string trim(const std::string& str) const;
+
+    /**
+     * @brief Utility to split a CSV line by commas.
+     */
     std::vector<std::string> splitCSVLine(const std::string& line) const;
+
+    /**
+     * @brief Utility to strip quotes from a CSV field.
+     */
     std::string stripQuotes(const std::string& str) const;
 };
 

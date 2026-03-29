@@ -2,21 +2,47 @@
 // Created by andresantos on 07/03/26.
 //
 
+/**
+ * @file BatchRunner.h
+ * @brief Header for the BatchRunner class.
+ */
+
 #ifndef DA_1ST_PROJECT_BATCHRUNNER_H
 #define DA_1ST_PROJECT_BATCHRUNNER_H
 
 #include <string>
+#include "../io/CSVParser.h"
 
+/**
+ * @class BatchRunner
+ * @brief Class that handles execution in batch mode.
+ */
 class BatchRunner {
     public:
+    /**
+     * @brief Constructor for BatchRunner.
+     */
     BatchRunner();
-    void run(const std::string& inputFile, const std::string& riskFile);//i named it riskfile becaause of the project guidelines
+
+    /**
+     * @brief Executes the tool in batch mode.
+     * @param inputFile Input filename.
+     * @param outputFile Output filename.
+     */
+    void run(const std::string& inputFile, const std::string& outputFile);
 
     private:
-    //This eventually will be where we link the IO and Algorithm Logic i think
+    CSVParser parser;
 
+    /**
+     * @brief Internal helper to parse data.
+     */
     void parseData(const std::string& inputFile);
-    void executeAndSave(const std::string& riskFile);//This automates some steps the Menu does not (Runs the MaxFlow and writes the results automaticallly to a file)
+
+    /**
+     * @brief Internal helper to execute analysis and save results.
+     */
+    void executeAndSave(const std::string& outputFile);
     };
 
 #endif //DA_1ST_PROJECT_BATCHRUNNER_H
